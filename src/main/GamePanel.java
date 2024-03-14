@@ -14,8 +14,9 @@ public class GamePanel extends JPanel implements Runnable {
 
 	KeyboardInput ki = new KeyboardInput();
 	Thread gameThread;
-	Player player = new Player(this, ki);
+	public Player player = new Player(this, ki);
 	TileManager tm = new TileManager(this);
+
 
 	public GamePanel() {
 

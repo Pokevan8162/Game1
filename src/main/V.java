@@ -15,15 +15,23 @@ public class V {
 	public final static int maxScreenCol = 16;
 	public final static int maxScreenRow = 12; // these choose how many tiles are on each row/column of the game screen
 	public final static int tileSize = originalTileSize * scale; // actual tile size on the game screen
-	final static int screenWidth = tileSize * maxScreenCol;
-	final static int screenHeight = tileSize * maxScreenRow;
+	public final static int screenWidth = tileSize * maxScreenCol;
+	public final static int screenHeight = tileSize * maxScreenRow;
 	
 	// PLAYER SETTINGS:
 	
-	public static int playerX = 100; // X value of default player location
-	public static int playerY = 100; // Y value of default player location
+	public static int playerX = tileSize * 20; // X value of default player location
+	public static int playerY = tileSize * 20; // Y value of default player location
 	public static int playerSpeed = 4; // This value will be added/subtracted from the player's location with every respective key input
 	public static String direction = "down";
+	
+	// WORLD SETTINGS
+	
+	public final static int maxWorldCol = 50; // max amount of rows and columns for a map
+	public final static int maxWorldRow = 50;
+	public final int worldWidth = tileSize * maxWorldCol;
+	public final int worldHeight = tileSize * maxWorldRow;
+	public static String defaultMap = "/maps/Map02/"; //the starting map for the player
 
 	public static void main(String[] args) {
 
@@ -34,6 +42,9 @@ public class V {
 		System.out.println("Player speed: " + playerSpeed);
 		System.out.println("Player default location: (" + playerX + "), (" + playerY + ")");
 		System.out.println("Game FPS: " + FPS);
+		System.out.println("Max world row size: " + maxWorldRow);
+		System.out.println("Max world row size: " + maxWorldCol);
+		System.out.println("Path of default map: " + defaultMap);
 
 	}
 	
