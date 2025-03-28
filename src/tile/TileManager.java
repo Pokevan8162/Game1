@@ -2,62 +2,80 @@ package tile;
 
 import java.awt.Graphics2D;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 
 import main.GamePanel;
+import main.Toolbox;
 import main.V;
 
 public class TileManager {
 
 	GamePanel gp;
-	Tile[] tile;
-	int mapTileNum[][]; // Used to store the contents of a text file and creates map out of it
+	public static Tile[] tile;
+	public ArrayList<int[][]> maps = new ArrayList<int[][]>(100); // Used to store the multiple possible random maps
+	public int mapIndex; // Used to index current map
+	MapManager mg = new MapManager();
 	
 	public TileManager(GamePanel gp) {
 		this.gp = gp;
 		
-		tile = new Tile[10]; // Array size is how many different tiles you have (ex. water, grass, glass, etc)
-		mapTileNum = new int[V.maxWorldCol][V.maxWorldRow];
-		
+		tile = new Tile[20];
 		getTileImage();
-		loadMap(V.defaultMap);
+		try {
+			maps.add(loadMap(V.defaultMap));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		mapIndex = 0;
 	}
 	
 	public void getTileImage() {
-		
-		try {
-			
-			tile[0] = new Tile();
-			tile[0].image = ImageIO.read(getClass().getResourceAsStream("/tiles/Grass_1.png"));
-			tile[1] = new Tile();
-			tile[1].image = ImageIO.read(getClass().getResourceAsStream("/tiles/Wall_1.png"));
-			tile[2] = new Tile();
-			tile[2].image = ImageIO.read(getClass().getResourceAsStream("/tiles/Water_1.png"));
-			tile[3] = new Tile();
-			tile[3].image = ImageIO.read(getClass().getResourceAsStream("/tiles/Dirt_1.png"));
-			tile[4] = new Tile();
-			tile[4].image = ImageIO.read(getClass().getResourceAsStream("/tiles/Sand_1.png"));
-			tile[5] = new Tile();
-			tile[5].image = ImageIO.read(getClass().getResourceAsStream("/tiles/Tree_1.png"));
-			
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
+		setup(0, "Space_1", false, false, false);  // collision, death, bounce
+		setup(1, "Asteroid_1", false, true, false);
+		setup(2, "Boundary", true, false, false);
+		setup(3, "BouncyBall_1", false, false, true);
 	}
 	
-	public void loadMap(String mapPath) { // Reads the text file and inserts the value into the array
+	public void setup(int index, String imageName, boolean collision, boolean death, boolean bounce) {
+		Toolbox toolBox = new Toolbox();
 		
 		try {
-			InputStream is = getClass().getResourceAsStream(mapPath);
-			BufferedReader br = new BufferedReader(new InputStreamReader(is)); // Reads text file
+			tile[index] = new Tile(); //adds a new tile to the array of tiles
+			tile[index].image = ImageIO.read(getClass().getResourceAsStream("/tiles/" + imageName + ".png")); //sets the image of the tile at the created index
+			tile[index].image = toolBox.scaleImage(tile[index].image); //pre-scales the image so the game panel doesnt have to do that every time for performance
+			tile[index].collision = collision; //sets the collision of the tile (false as default)
+			tile[index].death = death;
+			tile[index].bounce = bounce;
+		} catch (Exception e) {
 			
+		}
+		
+	}
+	
+	public void generateMap() throws IOException {
+		String mapPath = mg.createHardMap();
+		maps.add(loadMap(mapPath));
+	}
+	
+	public int[][] loadMap(String mapPath) throws FileNotFoundException { // Reads the text file and inserts the value into the array
+		int mapTileNum[][] = new int[V.maxWorldCol][V.maxWorldRow];
+		File file = new File(mapPath);
+		FileReader reader = new FileReader(file);
+		BufferedReader bufferedReader = new BufferedReader(reader); // instantiates a buffered reader that goes through each line in the file
+		
+		try {
+			BufferedReader br = new BufferedReader(reader); // Reads text file
 			int col = 0;
 			int row = 0;
-			
 			while (col < V.maxWorldCol && row < V.maxWorldRow) {
 				String line = br.readLine();
 				
@@ -76,32 +94,35 @@ public class TileManager {
 			br.close();
 			
 		} catch(Exception e) {
-			
+			System.out.println("Error reading file");
 		}
+		return mapTileNum;
+	}
+	
+	public void changeMap() throws IOException {
+		generateMap();
+		mapIndex++;
+		gp.scrollSpeed = 0;
+		gp.player.worldY = V.playerY - (384 - gp.player.screenY);
 	}
 	
 	public void draw(Graphics2D g2) {
 		
+//		System.out.println(gp.scrollSpeed);
+//		System.out.println(gp.player.worldY);
+//		System.out.println(gp.player.screenY);
+		
 		int worldCol = 0;
 		int worldRow = 0;
 
-		
-		// This creates the background
 		while (worldCol < V.maxWorldCol && worldRow < V.maxWorldRow) {
 			
-			int tileNum = mapTileNum[worldCol][worldRow];
+			int tileNum = maps.get(mapIndex)[worldCol][worldRow];
 			
-			int worldX = worldCol * V.tileSize;
-			int worldY = worldRow * V.tileSize;
-			int screenX = worldX - gp.player.worldX + gp.player.screenX;
-			int screenY = worldY - gp.player.worldY + gp.player.screenY;
+			int screenX = worldCol * V.tileSize - V.tileSize;
+			int screenY = worldRow * V.tileSize + gp.scrollSpeed - (38 * V.tileSize); // - 38 * V.tileSize makes sure we start at the bottom
 			
-			if (worldX + V.tileSize > gp.player.worldX - gp.player.screenX &&
-				worldX - V.tileSize < gp.player.worldX + gp.player.screenX &&
-			    worldY + V.tileSize > gp.player.worldY - gp.player.screenY &&
-			    worldY - V.tileSize < gp.player.worldY + gp.player.screenY)
-			
-			g2.drawImage(tile[tileNum].image, screenX, screenY, V.tileSize, V.tileSize, null);
+			g2.drawImage(tile[tileNum].image, screenX, screenY, null);
 			worldCol++;
 			
 			if (worldCol == V.maxWorldCol) {
@@ -110,4 +131,5 @@ public class TileManager {
 			}
 		}
 	}
+	
 }
